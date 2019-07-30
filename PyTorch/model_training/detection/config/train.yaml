@@ -1,6 +1,6 @@
 ---
 experiment:
-  name: tiger_detector_retinav21
+  name: tiger_detector_retinav26
   folder: /home/cortwave/projects/tigerc/tiger_detection/detection_exp
 phase: train
 task: detect
@@ -8,12 +8,12 @@ task: detect
 train:
     ann_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/train.json
     img_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/detection_img/trainval
-    img_size: 320
+    img_size: 512
     transform: strong
 val:
     ann_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/val.json
     img_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/detection_img/trainval
-    img_size: 320
+    img_size: 512
     transform: weak
 
 model:
@@ -21,7 +21,7 @@ model:
     weights_path: /home/haribo/okupyn_exp/binary_fpn_lowaug/best.h5
     pretrain_weights: /home/cortwave/projects/tigerc/tiger_detection/tigers_code/mobilenet_v2.pth.tar
     num_classes: 2
-    img_size: 320
+    img_size: 512
     feature_maps: 6
     name: retina_net
     backbone: mobilenet

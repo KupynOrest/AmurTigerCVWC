@@ -60,24 +60,24 @@ class COCODetection(data.Dataset):
             img = self.pull_image(index)
             bboxes, labels = self.pull_annotation(index)
 
-            # random_idx = random.randrange(self.__len__())
-            # augm_img = self.pull_image(random_idx)
-            # augm_bboxes, augm_labels = self.pull_annotation(random_idx)
+            random_idx = random.randrange(self.__len__())
+            augm_img = self.pull_image(random_idx)
+            augm_bboxes, augm_labels = self.pull_annotation(random_idx)
 
-            # count = random.randrange(len(augm_labels))
-            # indexes = np.arange(len(augm_labels))
-            # np.random.shuffle(indexes)
-            # indexes = indexes[:count]
-            # augm_bboxes, augm_labels = np.array(augm_bboxes)[indexes], np.array(augm_labels)[indexes]
+            count = random.randrange(len(augm_labels))
+            indexes = np.arange(len(augm_labels))
+            np.random.shuffle(indexes)
+            indexes = indexes[:count]
+            augm_bboxes, augm_labels = np.array(augm_bboxes)[indexes], np.array(augm_labels)[indexes]
 
-            # for a_box, a_label in zip(augm_bboxes, augm_labels):
-            #     labels.append(a_label)
-            #
-            #     x, y, w, h = a_box
-            #     x0 = random.randrange(img.shape[1] - w - 1)
-            #     y0 = random.randrange(img.shape[0] - h - 1)
-            #     img[y0:y0+h, x0:x0+w] = augm_img[y:y+h, x:x+w]
-            #     bboxes.append([x0, y0, w, h])
+            for a_box, a_label in zip(augm_bboxes, augm_labels):
+                labels.append(a_label)
+            
+                x, y, w, h = a_box
+                x0 = random.randrange(img.shape[1] - w - 1)
+                y0 = random.randrange(img.shape[0] - h - 1)
+                img[y0:y0+h, x0:x0+w] = augm_img[y:y+h, x:x+w]
+                bboxes.append([x0, y0, w, h])
 
             if self.transform is not None:
                 transformed = self.transform(image=img, bboxes=bboxes, category_id=labels)

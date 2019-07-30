@@ -16,7 +16,7 @@ class RetinaNet(nn.Module):
         num_filters_fpn = config.get('num_filters_fpn', 128)
         self.fpn = FPN(config=config, num_filters=num_filters_fpn, pretrained=pretrained)
         self.num_classes = config['num_classes']
-        feature_maps = [40, 20, 10, 10, 10, 10]
+        feature_maps = [64, 32, 16, 16, 16, 16]
         self.size = config["img_size"]
         self.priorbox = PriorBox(self.size, feature_maps=feature_maps)
         self.regression = nn.ModuleList([self._make_head(num_anchors*4, x) for x in range(len(feature_maps))])
@@ -44,9 +44,9 @@ class RetinaNet(nn.Module):
         conf = list()
         assert len(maps) == len(self.regression)
         assert len(self.regression) == len(self.classification)
-        for m in maps:#, regr_head, cl_head in zip(maps, self.regression, self.classification):
-            loc.append(self.regression[0](m).permute(0, 2, 3, 1).contiguous())
-            conf.append(self.classification[0](m).permute(0, 2, 3, 1).contiguous())
+        for m, regr_head, cl_head in zip(maps, self.regression, self.classification):
+            loc.append(regr_head(m).permute(0, 2, 3, 1).contiguous())
+            conf.append(cl_head(m).permute(0, 2, 3, 1).contiguous())
 
         loc = torch.cat([o.view(o.size(0), -1) for o in loc], 1)
         conf = torch.cat([o.view(o.size(0), -1) for o in conf], 1)
@@ -104,8 +104,8 @@ class FPN(nn.Module):
         map4 = lateral4
         map3 = self.td1(lateral3 + nn.functional.upsample(map4, scale_factor=2, mode="nearest"))
         map2 = self.td2(lateral2 + nn.functional.upsample(map3, scale_factor=2, mode="nearest"))
-        # for i in [map2, map3, map4, map5, map6, map7]:
-        #     print(i.size())
+        #for i in [map2, map3, map4, map5, map6, map7]:
+        #    print(i.size())
         return map2, map3, map4, map5, map6, map7
 
 

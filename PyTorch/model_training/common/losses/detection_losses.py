@@ -66,7 +66,7 @@ class MultiBoxLoss(nn.Module):
         loss_c = self.confidence_loss(conf_p, conf_t)
 
         N = pos_mask.long().sum(1, keepdim=True).data.sum()  # conf_t.size(0)
-        return loss_l / N, loss_c / N
+        return loss_l, loss_c
 
     def encode_target(self, loc_data, targets, priors):
         """Produces localization targets
