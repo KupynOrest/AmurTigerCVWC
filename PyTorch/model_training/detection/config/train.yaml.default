@@ -1,0 +1,50 @@
+---
+experiment:
+  name: tiger_detector
+  folder: /root/detection_exp
+phase: train
+task: detect
+
+train:
+    ann_path: /root/tigers_data/train.json
+    img_path: /root/tigers_data/detection_img/trainval
+    img_size: 320
+    transform: strong
+val:
+    ann_path: /root/tigers_data/val.json
+    img_path: /root/tigers_data/detection_img/trainval
+    img_size: 320
+    transform: weak
+
+model:
+    load_weights: False
+    weights_path: /home/haribo/okupyn_exp/binary_fpn_lowaug/best.h5
+    pretrained: True
+    pretrain_weights: /root/tiger_detection/tigers_code/mobilenet_v2.pth.tar
+    img_size: 320
+    feature_maps: 6
+    name: retina_net
+    backbone: mobilenet
+    encoder_depth: 50
+    pretrained: True
+    visual_thr: 0.25
+
+    loss:
+        name: multibox_loss
+        localization_loss: l1_smooth_loss
+        confidence_loss: cross_entropy_loss
+
+optimizer:
+  name: adam
+  lr: 0.0001
+
+scheduler:
+  name: plateau
+  mode: max
+  patience: 5
+  factor: 0.5
+  min_lr: 0.0000001
+
+batch_size: 32
+num_epochs: 250
+early_stopping: 15

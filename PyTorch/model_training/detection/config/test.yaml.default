@@ -1,0 +1,26 @@
+---
+experiment:
+  name: tiger_detector
+  folder: /root/detection_exp
+phase: test
+save_folder: eval
+
+data:
+    - name: tigerss
+      ann_path: /root/tigers_data/val.json
+      img_path: /root/tigers_data/detection_img/trainval
+
+model:
+    load_weights: False
+    weights_path: /home/haribo/okupyn_exp/binary_fpn_lowaug/best.h5
+    pretrained: /root/tigers/mobilenet_v2.pth.tar
+    num_classes: 2
+    img_size: 320
+    feature_maps: 6
+    name: retina_net
+    backbone: mobilenet
+    encoder_depth: 50
+    pretrained: True
+    visual_thr: 0.25
+    filter_thr: 0.01
+    filepath: /root/detection_exp/tiger_detector/best.h5
