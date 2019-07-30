@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from pytorchcv.models.mobilenetv2 import mobilenetv2_w1 as mobilenet_w1
 
 from model_training.detection.prior_box import PriorBox
 from .backbones import get_backbone
@@ -68,14 +69,29 @@ class FPN(nn.Module):
         """
 
         super().__init__()
-        self.backbone, layer_dims = get_backbone(config)
-        self.conv5 = nn.Conv2d(in_channels=160, out_channels=128, kernel_size=3, padding=1)
-        self.conv6 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
-        self.conv7 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+        net = mobilenet_w1(pretrained=True).features
+        self.backbone = nn.ModuleList([
+            nn.Sequential(net.init_block, net.stage1),
+            net.stage2,
+            net.stage3,
+            net.stage4,
+            net.stage5
+        ])
+        self.conv5 = nn.Conv2d(in_channels=320, out_channels=128, kernel_size=3, padding=1)
+        self.conv6 = nn.Sequential(
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+        )
+        self.conv7 = nn.Sequential(
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+        )
 
-        self.lateral4 = nn.Conv2d(160, num_filters, kernel_size=1, bias=False)
-        self.lateral3 = nn.Conv2d(layer_dims[1], num_filters, kernel_size=1, bias=False)
-        self.lateral2 = nn.Conv2d(layer_dims[0], num_filters, kernel_size=1, bias=False)
+        self.lateral4 = nn.Conv2d(320, num_filters, kernel_size=1, bias=False)
+        self.lateral3 = nn.Conv2d(96, num_filters, kernel_size=1, bias=False)
+        self.lateral2 = nn.Conv2d(32, num_filters, kernel_size=1, bias=False)
 
         self.td1 = nn.Sequential(nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1),
                                  nn.BatchNorm2d(num_filters),
@@ -86,14 +102,14 @@ class FPN(nn.Module):
 
     def forward(self, x):
         # Bottom-up pathway, from ResNet
-        enc0 = self.backbone['layer0'](x)
-        enc1 = self.backbone['layer1'](enc0)  # 256
-        enc2 = self.backbone['layer2'](enc1)  # 512
-        enc3 = self.backbone['layer3'](enc2)  # 1024
-        enc4 = self.backbone['layer4'](enc3)  # 2048
+        enc0 = self.backbone[0](x)
+        enc1 = self.backbone[1](enc0)  # 256
+        enc2 = self.backbone[2](enc1)  # 512
+        enc3 = self.backbone[3](enc2)  # 1024
+        enc4 = self.backbone[4](enc3)  # 2048
         map5 = self.conv5(enc4)
-        map6 = self.conv6(torch.relu(map5))
-        map7 = self.conv7(torch.relu(map6))
+        map6 = self.conv6(map5)
+        map7 = self.conv7(map6)
 
         # Lateral connections
         lateral4 = self.lateral4(enc4)
