@@ -25,7 +25,7 @@ def _decode(loc, priors, variances):
     return boxes
 
 
-def _soft_nms(box_scores, score_threshold, sigma=0.5, top_k=-1):
+def _soft_nms(boxes, scores, score_threshold, sigma=0.5, top_k=-1):
     """Soft NMS implementation.
     References:
         https://arxiv.org/abs/1704.04503
@@ -40,6 +40,7 @@ def _soft_nms(box_scores, score_threshold, sigma=0.5, top_k=-1):
          picked_box_scores (K, 5): results of NMS.
     """
     picked_box_scores = []
+    box_scores = torch.cat((boxes, scores.unsqueeze(-1)), 1)
     while box_scores.size(0) > 0:
         max_score_index = torch.argmax(box_scores[:, 4])
         cur_box_prob = torch.tensor(box_scores[max_score_index, :])
@@ -53,7 +54,8 @@ def _soft_nms(box_scores, score_threshold, sigma=0.5, top_k=-1):
         box_scores[:, -1] = box_scores[:, -1] * torch.exp(-(ious * ious) / sigma)
         box_scores = box_scores[box_scores[:, -1] > score_threshold, :]
     if len(picked_box_scores) > 0:
-        return torch.stack(picked_box_scores)
+        box_probs = torch.stack(picked_box_scores)
+        return torch.cat([box_probs[..., -1:], box_probs[..., :4]], 1)
     else:
         return torch.tensor([])
 
@@ -146,7 +148,7 @@ def _nms_mean(boxes, scores, overlap=0.5, top_k=200):
         # weigh picked bboxes using their scores
         scores_group = scores_group / scores_group.sum()
         averaged_box = (scores_group.unsqueeze(-1) * boxes_group).sum(0)
-        averaged_boxes.append(torch.cat([averaged_box, score.unsqueeze(0)]))
+        averaged_boxes.append(torch.cat([score.unsqueeze(0), averaged_box]))
 
     res = torch.stack(averaged_boxes)
     return res
@@ -200,10 +202,9 @@ class Detect(object):
                 l_mask = c_mask.unsqueeze(1).expand_as(decoded_boxes)
                 boxes = decoded_boxes[l_mask].view(-1, 4)
                 # idx of highest scoring and non-overlapping boxes per class
-                ids, count = _nms(boxes, scores, self.nms_thresh, self.top_k)
-                output[i, cl, :count] = \
-                    torch.cat((scores[ids[:count]].unsqueeze(1),
-                               boxes[ids[:count]]), 1)
+                box_scores = _nms_mean(boxes, scores, self.nms_thresh, self.top_k)
+                count = box_scores.size(0)
+                output[i, cl, :count] = box_scores
         flt = output.contiguous().view(num, -1, 5)
         _, idx = flt[:, :, 0].sort(1, descending=True)
         _, rank = idx.sort(1)
@@ -218,8 +219,6 @@ class DetectorPostProcessing(object):
 
     def __call__(self, loc, conf, priors, img_shape, multiclass_suppression=True):
         bboxes, labels, scores = self.get_detections(loc, conf, priors, img_shape)
-        if multiclass_suppression:
-            bboxes, labels, scores = self.multiclass_suppression(bboxes, labels, scores)
         return bboxes, labels, scores
 
     def get_detections(self, loc, conf, priors, img_shape):
@@ -241,16 +240,4 @@ class DetectorPostProcessing(object):
                 labels.append(ii)
                 scores.append(score)
                 j += 1
-        return bboxes, labels, scores
-
-    def multiclass_suppression(self, bboxes, labels, scores, nms_thresh=0.5):
-        bboxes, labels, scores = torch.Tensor(bboxes), torch.IntTensor(labels), torch.Tensor(scores)
-        # ids, count = _nms(bboxes, scores, nms_thresh, top_k=len(bboxes))
-        # to_keep = ids[:count]
-        # bboxes, labels, scores = bboxes[to_keep].tolist(), labels[to_keep].tolist(), scores[to_keep].tolist()
-
-        ids, count = _nms(bboxes, scores, nms_thresh, top_k=len(bboxes))
-        to_keep = ids[:count]
-        bboxes, labels, scores = bboxes[to_keep].tolist(), labels[to_keep].tolist(), scores[to_keep].tolist()
-
         return bboxes, labels, scores
