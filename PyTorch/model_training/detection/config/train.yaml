@@ -1,6 +1,6 @@
 ---
 experiment:
-  name: tiger_detector_exp1
+  name: tiger_detector_exp3
   folder: /home/cortwave/projects/tigerc/tiger_detection/detection_exp
 phase: train
 task: detect
@@ -45,6 +45,6 @@ scheduler:
   factor: 0.5
   min_lr: 0.000001
 
-batch_size: 28
+batch_size: 52
 num_epochs: 250
 early_stopping: 15

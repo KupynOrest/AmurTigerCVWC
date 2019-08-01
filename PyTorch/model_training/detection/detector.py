@@ -24,6 +24,7 @@ class Detector(object):
             if torch.cuda.is_available():
                 x = x.cuda()
             loc, conf, priors = self.net(x)
+            priors = priors[0]
         return self.post_processing(loc, conf, priors, img.shape, multiclass_suppression=self.multiclass_suppression)
 
     def _process_image(self, img):

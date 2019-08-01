@@ -404,6 +404,7 @@ class DetectionModelAdapter(ModelAdapter):
             return ap / unique_classes
 
         loc, conf, priors = output
+        priors = priors[0]
         img_size = self.img_size, self.img_size
         num = len(loc)
         map_metric = 0

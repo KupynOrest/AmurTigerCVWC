@@ -45,6 +45,7 @@ class MultiBoxLoss(nn.Module):
             targets (batch_size,num_objs,5): Ground truth boxes and labels for a batch (last idx is the label).
         """
         loc_p, conf_p, priors = predictions
+        priors = priors[0]
         num_classes = conf_p.size(2)
 
         # match priors (default boxes) and ground truth boxes

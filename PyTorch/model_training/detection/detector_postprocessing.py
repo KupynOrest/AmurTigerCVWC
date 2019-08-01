@@ -219,6 +219,8 @@ class DetectorPostProcessing(object):
 
     def __call__(self, loc, conf, priors, img_shape, multiclass_suppression=True):
         bboxes, labels, scores = self.get_detections(loc, conf, priors, img_shape)
+        # if multiclass_suppression:
+        #     bboxes, labels, scores = self.multiclass_suppression(bboxes, labels, scores)
         return bboxes, labels, scores
 
     def get_detections(self, loc, conf, priors, img_shape):
@@ -241,3 +243,12 @@ class DetectorPostProcessing(object):
                 scores.append(score)
                 j += 1
         return bboxes, labels, scores
+
+    def multiclass_suppression(self, bboxes, labels, scores, nms_thresh=0.5):
+        bboxes, labels, scores = torch.Tensor(bboxes), torch.IntTensor(labels), torch.Tensor(scores)
+
+        ids, count = _nms(bboxes, scores, nms_thresh, top_k=len(bboxes))
+        to_keep = ids[:count]
+        bboxes, labels, scores = bboxes[to_keep].tolist(), labels[to_keep].tolist(), scores[to_keep].tolist()
+
+        return bboxes.tolist(), labels.tolist(), scores.tolist()
