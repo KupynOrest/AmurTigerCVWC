@@ -1,9 +1,24 @@
 import torch
 import torch.nn as nn
-from pytorchcv.models.mobilenetv2 import mobilenetv2_w1 as mobilenet_w1
+from pytorchcv.models.mobilenet import fdmobilenet_wd2 as backbone
+#from pytorchcv.models.efficientnet import efficientnet_b2b as backbone
+#from pytorchcv.models.seresnext import seresnext101_32x4d as backbone
 
 from model_training.detection.prior_box import PriorBox
 from .backbones import get_backbone
+import torchviz
+
+
+class DConv2d(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.conv_depthwise = nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1, bias=False, groups=in_channels)
+        self.conv_pointwise = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
+
+    def forward(self, x):
+        x = self.conv_depthwise(x)
+        x = self.conv_pointwise(x)
+        return x  
 
 
 class RetinaNet(nn.Module):
@@ -14,14 +29,14 @@ class RetinaNet(nn.Module):
         # Feature Pyramid Network (FPN) with four feature maps of resolutions
         # 1/4, 1/8, 1/16, 1/32 and `num_filters` filters for all feature maps.
         num_anchors = config.get('num_anchors', 6)
-        num_filters_fpn = config.get('num_filters_fpn', 128)
+        num_filters_fpn = 128#config.get('num_filters_fpn', 128)
         self.fpn = FPN(config=config, num_filters=num_filters_fpn, pretrained=pretrained)
         self.num_classes = config['num_classes']
-        feature_maps = [64, 32, 16, 16, 16, 16]
+        feature_maps = [32, 16, 8, 8, 8, 8]
         self.size = config["img_size"]
         self.priorbox = PriorBox(self.size, feature_maps=feature_maps)
-        self.regression = nn.ModuleList([self._make_head(num_anchors*4, x) for x in range(len(feature_maps))])
-        self.classification = nn.ModuleList([self._make_head(num_anchors*self.num_classes, x) for x in range(len(feature_maps))])
+        self.regression = nn.ModuleList([self._make_head(num_anchors*4, x, num_filters_fpn) for x in range(len(feature_maps))])
+        self.classification = nn.ModuleList([self._make_head(num_anchors*self.num_classes, x, num_filters_fpn) for x in range(len(feature_maps))])
 
         with torch.no_grad():
             self.priors = self.priorbox.forward()
@@ -29,13 +44,13 @@ class RetinaNet(nn.Module):
                 self.priors = self.priors.cuda()
 
     @staticmethod
-    def _make_head(out_planes, x):
+    def _make_head(out_planes, x, num_filters):
         layers = []
-        for _ in range(4):
-            layers.append(nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1))
-            layers.append(nn.BatchNorm2d(128))
-            layers.append(nn.ReLU(True))
-        layers.append(nn.Conv2d(128, out_planes, kernel_size=3, stride=1, padding=1))
+        # for _ in range(2):
+        #     layers.append(DConv2d(num_filters, num_filters))
+        #     layers.append(nn.BatchNorm2d(num_filters))
+        #     layers.append(nn.ReLU(True))
+        layers.append(DConv2d(num_filters, out_planes))
         return nn.Sequential(*layers)
 
     def forward(self, x):
@@ -69,61 +84,71 @@ class FPN(nn.Module):
         """
 
         super().__init__()
-        net = mobilenet_w1(pretrained=True).features
+        net = backbone(pretrained=True).features
         self.backbone = nn.ModuleList([
             nn.Sequential(net.init_block, net.stage1),
             net.stage2,
             net.stage3,
             net.stage4,
-            net.stage5
+            # net.stage5
         ])
-        self.conv5 = nn.Conv2d(in_channels=320, out_channels=128, kernel_size=3, padding=1)
+        self.conv5 = DConv2d(in_channels=512, out_channels=num_filters)
         self.conv6 = nn.Sequential(
-            nn.BatchNorm2d(128),
+            nn.BatchNorm2d(num_filters),
             nn.ReLU(),
-            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+            DConv2d(in_channels=num_filters, out_channels=num_filters)
         )
         self.conv7 = nn.Sequential(
-            nn.BatchNorm2d(128),
+            nn.BatchNorm2d(num_filters),
             nn.ReLU(),
-            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+            DConv2d(in_channels=num_filters, out_channels=num_filters)
         )
 
-        self.lateral4 = nn.Conv2d(320, num_filters, kernel_size=1, bias=False)
-        self.lateral3 = nn.Conv2d(96, num_filters, kernel_size=1, bias=False)
-        self.lateral2 = nn.Conv2d(32, num_filters, kernel_size=1, bias=False)
+        self.lateral4 = nn.Conv2d(512, num_filters, kernel_size=1, bias=False)
+        self.lateral3 = nn.Conv2d(128, num_filters, kernel_size=1, bias=False)
+        self.lateral2 = nn.Conv2d(64, num_filters, kernel_size=1, bias=False)
 
-        self.td1 = nn.Sequential(nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1),
+        self.td1 = nn.Sequential(DConv2d(num_filters, num_filters),
                                  nn.BatchNorm2d(num_filters),
                                  nn.ReLU(inplace=True))
-        self.td2 = nn.Sequential(nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1),
+        self.td2 = nn.Sequential(DConv2d(num_filters, num_filters),
                                  nn.BatchNorm2d(num_filters),
                                  nn.ReLU(inplace=True))
+        self.upsample = nn.UpsamplingNearest2d(scale_factor=2)
 
     def forward(self, x):
         # Bottom-up pathway, from ResNet
         enc0 = self.backbone[0](x)
-        enc1 = self.backbone[1](enc0)  # 256
-        enc2 = self.backbone[2](enc1)  # 512
-        enc3 = self.backbone[3](enc2)  # 1024
-        enc4 = self.backbone[4](enc3)  # 2048
-        map5 = self.conv5(enc4)
+        enc1 = self.backbone[1](enc0)
+        enc2 = self.backbone[2](enc1)
+        enc3 = self.backbone[3](enc2)
+        # enc4 = self.backbone[4](enc3)
+        map5 = self.conv5(enc3)
         map6 = self.conv6(map5)
         map7 = self.conv7(map6)
 
         # Lateral connections
-        lateral4 = self.lateral4(enc4)
-        lateral3 = self.lateral3(enc3)
-        lateral2 = self.lateral2(enc2)
+        lateral4 = self.lateral4(enc3)
+        lateral3 = self.lateral3(enc2)
+        lateral2 = self.lateral2(enc1)
 
         # Top-down pathway
         map4 = lateral4
         map3 = self.td1(lateral3 + nn.functional.upsample(map4, scale_factor=2, mode="nearest"))
         map2 = self.td2(lateral2 + nn.functional.upsample(map3, scale_factor=2, mode="nearest"))
-        #for i in [map2, map3, map4, map5, map6, map7]:
-        #    print(i.size())
+        # for i in [map2, map3, map4, map5, map6, map7]:
+           # print(i.size())
         return map2, map3, map4, map5, map6, map7
 
 
-def build_retinanet(config):
-    return nn.DataParallel(RetinaNet(config))
+def build_retinanet(config, parallel=True):
+    model = RetinaNet(config)
+    from torchviz import make_dot
+    y = model(torch.randn(1, 3, 256, 256))
+    vis_graph = make_dot(y, params=dict(list(model.named_parameters())))
+    vis_graph.format = 'svg'
+    vis_graph.render()
+    print('rendered')
+    if parallel:
+        model = nn.DataParallel(model)
+    return model

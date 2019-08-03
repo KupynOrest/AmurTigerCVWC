@@ -1,19 +1,19 @@
 ---
 experiment:
-  name: tiger_detector_exp3
+  name: tiger_detector_exp15
   folder: /home/cortwave/projects/tigerc/tiger_detection/detection_exp
 phase: train
 task: detect
 
 train:
-    ann_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/train.json
+    ann_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/pseudolabel.json
     img_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/detection_img/trainval
-    img_size: 512
+    img_size: 256
     transform: strong
 val:
     ann_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/val.json
     img_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/detection_img/trainval
-    img_size: 512
+    img_size: 256
     transform: weak
 
 model:
@@ -21,7 +21,7 @@ model:
     weights_path: /home/haribo/okupyn_exp/binary_fpn_lowaug/best.h5
     pretrain_weights: /home/cortwave/projects/tigerc/tiger_detection/tigers_code/mobilenet_v2.pth.tar
     num_classes: 2
-    img_size: 512
+    img_size: 256
     feature_maps: 6
     name: retina_net
     backbone: mobilenet
@@ -45,6 +45,6 @@ scheduler:
   factor: 0.5
   min_lr: 0.000001
 
-batch_size: 52
+batch_size: 128
 num_epochs: 250
 early_stopping: 15
