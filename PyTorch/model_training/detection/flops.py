@@ -23,7 +23,7 @@ def _get_model(config):
 if __name__ == '__main__':
     config = get_config("config/train.yaml")
     model = _get_model(config).to('cuda:0')
-    img_size = 256
+    img_size = config['train']['img_size']
     input = torch.randn(1, 3, img_size, img_size).to('cuda:0')
     flops, params = profile(model, inputs=(input,))
     flops, params = clever_format([flops, params], "%.3f")

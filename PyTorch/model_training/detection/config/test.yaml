@@ -1,54 +1,53 @@
----
-experiment:
-  name: tiger_detector_exp15
-  folder: /home/cortwave/projects/tigerc/tiger_detection/detection_exp
-phase: test
-save_folder: eval
-
-data:
-    - name: tigerss
-      ann_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/pseudolabel.json
-      img_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/detection_img/trainval
-
-model:
-    load_weights: False
-    weights_path: /home/cortwave/projects/tigerc/tiger_detection/detection_exp/tiger_detector_exp15/last.h5
-    pretrain_weights:  /home/cortwave/projects/tigerc/tiger_detection/tigers_code/mobilenet_v2.pth.tar
-    num_classes: 2
-    img_size: 256
-    feature_maps: 6
-    name: retina_net
-    backbone: mobilenet
-    encoder_depth: 50
-    pretrained: True
-    visual_thr: 0.05
-    filter_thr: 0.01
-    filepath: /home/cortwave/projects/tigerc/tiger_detection/detection_exp/tiger_detector_exp15/last.h5
 #---
 #experiment:
-#  name: tiger_detector_exp14
-#  folder: /home/cortwave/projects/tigerc/tiger_detection/detection_exp
+# name: tiger_detector_exp21
+# folder: /home/cortwave/projects/tigerc/tiger_detection/detection_exp
 #phase: test
 #save_folder: eval
 #
 #data:
-#    - name: tigerss
-#      ann_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/test_set.json
-#      img_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/test
+#   - name: tigerss
+#     ann_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/val.json
+#     img_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/detection_img/trainval
 #
 #model:
-#    load_weights: False
-#    weights_path: /home/cortwave/projects/tigerc/tiger_detection/detection_exp/tiger_detector_exp14/last.h5
-#    pretrain_weights:  /home/cortwave/projects/tigerc/tiger_detection/tigers_code/mobilenet_v2.pth.tar
-#    num_classes: 2
-#    img_size: 256
-#    feature_maps: 6
-#    name: retina_net
-#    backbone: mobilenet
-#    encoder_depth: 50
-#    pretrained: True
-#    visual_thr: 0.05
-#    filter_thr: 0.01
-#    filepath: /home/cortwave/projects/tigerc/tiger_detection/detection_exp/tiger_detector_exp14/last.h5
+#   load_weights: False
+#   weights_path: /home/cortwave/projects/tigerc/tiger_detection/detection_exp/tiger_detector_exp21/last.h5
+#   pretrain_weights:  /home/cortwave/projects/tigerc/tiger_detection/tigers_code/mobilenet_v2.pth.tar
+#   num_classes: 2
+#   img_size: 224
+#   feature_maps: 6
+#   name: retina_net
+#   backbone: mobilenet
+#   encoder_depth: 50
+#   pretrained: True
+#   visual_thr: 0.05
+#   filter_thr: 0.01
+#   filepath: /home/cortwave/projects/tigerc/tiger_detection/detection_exp/tiger_detector_exp21/last.h5
+---
+ experiment:
+   name: tiger_detector_exp21
+   folder: /home/cortwave/projects/tigerc/tiger_detection/detection_exp
+ phase: test
+ save_folder: eval
 #
+ data:
+     - name: tigerss
+       ann_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/test_set.json
+       img_path: /home/cortwave/projects/tigerc/tiger_detection/tigers_data/test
+#
+ model:
+     load_weights: False
+     weights_path: /home/cortwave/projects/tigerc/tiger_detection/detection_exp/tiger_detector_exp21/last.h5
+     pretrain_weights:  /home/cortwave/projects/tigerc/tiger_detection/tigers_code/mobilenet_v2.pth.tar
+     num_classes: 2
+     img_size: 224
+     feature_maps: 6
+     name: retina_net
+     backbone: mobilenet
+     encoder_depth: 50
+     pretrained: True
+     visual_thr: 0.05
+     filter_thr: 0.01
+     filepath: /home/cortwave/projects/tigerc/tiger_detection/detection_exp/tiger_detector_exp21/last.h5
 #
