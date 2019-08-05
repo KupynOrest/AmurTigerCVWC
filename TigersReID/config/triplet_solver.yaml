@@ -1,0 +1,31 @@
+---
+project: fashion_retrieval
+experiment_desc: triplet_aligned
+dataroot: /home/vbudzan/gan-lab/stacked_hourglass/data_aligned/data/train/
+datasets:
+    train: /home/vbudzan/gan-lab/stacked_hourglass/whale_identification/triplets.pkl
+warmup_epochs: 0
+model:
+    name: triplet_net
+    loss: triplet_loss
+    mode: online
+    selection: hardest
+    margin: 0.2
+    backbone: se_resnext_50
+    pretrained: False
+num_epochs: 50
+num_workers: 8
+batch_size: 16
+image_size: [256, 512]
+dataset: 
+    mode: online
+optimizer: 
+    name: adam
+    lr: 0.00001
+scheduler:
+    name: linear
+    min_lr: 0.000001
+load_weights:
+    load: True
+    path: best_resnet50.h5
+    from: sphere_net

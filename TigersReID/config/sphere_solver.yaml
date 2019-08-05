@@ -1,0 +1,35 @@
+---
+project: whale_identification
+experiment_desc: resnext_tigers_101_large_bboxes_augs_small_valid_50
+dataroot: dataset/tigers_train
+datasets:
+    train: dataset/atrw_anno_reid_train/reid_list_train_processed.csv
+    validation: dataset/atrw_anno_reid_train/reid_list_validation_processed.csv
+    bboxs: dataset/tiger_detector.txt
+
+model:
+    name: sphere_net
+    loss: cos_loss
+    backbone: se_resnext_50
+    num_classes: 107
+    pretrained: True
+num_epochs: 100
+num_workers: 4
+new_whales: False
+batch_size: 16
+image_size: [256, 512]
+dataset: 
+    mode: classification
+optimizer: 
+    name: adam
+    lr: 0.0001
+scheduler:
+    name: plateau
+    patience: 4
+    factor: 0.5
+    epsilon: 0.000001
+    min_lr: 0.0000001
+load_weights:
+    load: False
+    path: best_default_experiment.h5
+    from: sphere_net
